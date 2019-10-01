@@ -1,0 +1,15 @@
+[package]
+name = "countermacro"
+version = "0.1.0"
+authors = ["Dodo <kasper199914@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro-hack = "*"
+syn = "*"
+lazy_static = "*"
+proc-macro2 = {version = "1.0"}
