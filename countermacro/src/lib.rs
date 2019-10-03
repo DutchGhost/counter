@@ -16,42 +16,36 @@ use std::path::PathBuf;
 use std::collections::{HashMap, hash_map::Entry};
 
 lazy_static! {
-    static ref COUNTERS: Mutex<HashMap<PathBuf, usize>> = Mutex::new(HashMap::new());
+    static ref COUNTERS: Mutex<HashMap<String, usize>> = Mutex::new(HashMap::new());
 }
 
-struct SourceFile {
-    fname: syn::LitStr,
+struct Identifier {
+    name: syn::LitStr,
 }
 
-impl Parse for SourceFile {
+impl Parse for Identifier {
     fn parse(input: ParseStream) -> Result<Self> {
-        let span: proc_macro2::Span = proc_macro2::Span::call_site();
-        dbg!(span.source_file());
-        let fname = input.parse().expect("STR EXPECTED");
+        let name = input.parse().expect("Expected Identifier");
 
-        Ok(Self { fname })
+        Ok(Self { name })
     }
 }
 
 #[proc_macro_hack]
 pub fn counter_impl(tokens: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(tokens as SourceFile);
 
-    let b = PathBuf::from(input.fname.value());
+    let input = parse_macro_input!(tokens as Identifier);
+    let name = input.name.value();
 
-    if let Ok(mut guard) = COUNTERS.lock() {
-        let value = match guard.entry(b) {
-            Entry::Vacant(v) => {
-                *v.insert(1)
-            }
+    let value = COUNTERS.lock().map(|mut guard| {
+        match guard.entry(name) {
+            Entry::Vacant(v) => *v.insert(0),
             Entry::Occupied(mut v) => {
                 *v.get_mut() += 1;
                 *v.get_mut()
             }
-        };
+        }
+    }).expect("Failed to update indentifiers counter.");
 
-        return format!("{}", value).parse().unwrap()
-    }
-
-    panic!()
+    format!("{}", value).parse().unwrap()
 }
